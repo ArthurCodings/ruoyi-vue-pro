@@ -16,7 +16,7 @@
         <module>yudao-module-system</module>
         <module>yudao-module-infra</module>
 <!--        <module>yudao-module-member</module>-->
-<!--        <module>yudao-module-bpm</module>-->
+        <module>yudao-module-bpm</module>
 <!--        <module>yudao-module-report</module>-->
 <!--        <module>yudao-module-mp</module>-->
 <!--        <module>yudao-module-pay</module>-->
@@ -76,6 +76,9 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${maven-compiler-plugin.version}</version>
                     <configuration>
+                        <!-- 显式指定为当前分支 JDK，避免被 settings.xml 等处的 maven.compiler.source=1.8 覆盖 -->
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
                         <annotationProcessorPaths>
                             <path>
                                 <groupId>org.springframework.boot</groupId>

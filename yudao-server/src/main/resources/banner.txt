@@ -1,6 +1,5 @@
-ArthurCodings开发者 http://www.arthurcodings.com
-Application Version: ${yudao.info.version}
-Spring Boot Version: ${spring-boot.version}
+ArthurCodings 四千周开发者 http://www.arthurcodings.com
+
 
   █████╗ ██████╗ ████████╗██╗  ██╗██╗   ██╗██████╗     ██████╗ ██████╗ ██████╗ ██╗███╗   ██╗ ██████╗ ███████╗
  ██╔══██╗██╔══██╗╚══██╔══╝██║  ██║██║   ██║██╔══██╗    ██╔══██╗██╔══██╗██╔══██╗██║████╗  ██║██╔════╝ ██╔════╝
@@ -20,3 +19,4 @@ Spring Boot Version: ${spring-boot.version}
    ╚═════╝ ╚═╝  ╚═╝    ╚══════╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝    ╚══════╝   ╚═╝   ╚══════╝   ╚═╝   ╚══════╝╚═╝     ╚═╝
 
                                             OA 超级系统 · OA Super System
+
