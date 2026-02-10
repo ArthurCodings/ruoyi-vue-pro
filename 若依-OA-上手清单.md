@@ -39,6 +39,7 @@
 2. **执行 SQL 脚本**（在项目根目录 `sql/mysql` 目录下）  
    - 在 `ruoyi-vue-pro` 库中执行 `ruoyi-vue-pro.sql`。  
    - 同样在 `ruoyi-vue-pro` 库中执行 `quartz.sql`（初始化定时任务相关表）。  
+   - **重要**：再执行 `bpm-tables.sql`，创建 BPM 工作流业务表（`bpm_category`、`bpm_form` 等）。否则进入「流程分类」会报「表结构未导入」错误。
 
 3. **关于 Flowable 表**  
    - Flowable 表会在启动开启 `yudao-module-bpm` 后，由配置 `flowable.database-schema-update=true` 自动建表，无需单独建库。  
@@ -167,6 +168,7 @@
 | 前端请求 404 / 跨域 | 后端未启动或端口不一致 | 确认后端已启、前端环境变量里接口地址和端口正确 |
 | 登录后没有「工作流」菜单 | 角色未分配工作流菜单权限 | 在「菜单管理」给对应角色勾选工作流相关菜单 |
 | 流程部署失败 / 找不到表 | Flowable 表未自动创建或 BPM 未启用 | 确认已启用 `yudao-module-bpm` 并启动过；Flowable 表由 `database-schema-update=true` 自动建在 `ruoyi-vue-pro` 库 |
+| 流程分类报「表结构未导入」/ bpm_category 不存在 | BPM 业务表未建 | 执行 `sql/mysql/bpm-tables.sql` 完成 BPM 业务表创建（官方文档需付费，本仓库已提供该脚本） |
 | 待办列表为空 | 流程未部署或未绑定表单 | 先部署流程并绑定表单，再发起一条测试 |
 
 ---
