@@ -1,7 +1,6 @@
 package cn.iocoder.yudao.framework.mybatis.config;
 
 import cn.hutool.core.util.StrUtil;
-import cn.iocoder.yudao.framework.common.util.collection.SetUtils;
 import cn.iocoder.yudao.framework.mybatis.core.util.JdbcUtils;
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -11,7 +10,9 @@ import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,8 +30,8 @@ public class IdTypeEnvironmentPostProcessor implements EnvironmentPostProcessor 
 
     private static final String QUARTZ_JOB_STORE_DRIVER_KEY = "spring.quartz.properties.org.quartz.jobStore.driverDelegateClass";
 
-    private static final Set<DbType> INPUT_ID_TYPES = SetUtils.asSet(DbType.ORACLE, DbType.ORACLE_12C,
-            DbType.POSTGRE_SQL, DbType.KINGBASE_ES, DbType.DB2, DbType.H2);
+    private static final Set<DbType> INPUT_ID_TYPES = new HashSet<>(Arrays.asList(
+            DbType.ORACLE, DbType.ORACLE_12C, DbType.POSTGRE_SQL, DbType.KINGBASE_ES, DbType.DB2, DbType.H2));
 
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
