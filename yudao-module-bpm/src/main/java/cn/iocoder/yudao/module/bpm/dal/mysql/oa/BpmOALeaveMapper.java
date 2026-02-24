@@ -26,4 +26,8 @@ public interface BpmOALeaveMapper extends BaseMapperX<BpmOALeaveDO> {
                 .orderByDesc(BpmOALeaveDO::getId));
     }
 
+    default BpmOALeaveDO selectByProcessInstanceId(String processInstanceId) {
+        return selectOne(BpmOALeaveDO::getProcessInstanceId, processInstanceId);
+    }
+
 }

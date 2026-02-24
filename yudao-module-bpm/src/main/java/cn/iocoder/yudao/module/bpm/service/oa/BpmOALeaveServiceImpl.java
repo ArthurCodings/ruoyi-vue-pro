@@ -82,6 +82,11 @@ public class BpmOALeaveServiceImpl implements BpmOALeaveService {
     }
 
     @Override
+    public BpmOALeaveDO getLeaveByProcessInstanceId(String processInstanceId) {
+        return leaveMapper.selectByProcessInstanceId(processInstanceId);
+    }
+
+    @Override
     public PageResult<BpmOALeaveDO> getLeavePage(Long userId, BpmOALeavePageReqVO pageReqVO) {
         return leaveMapper.selectPage(userId, pageReqVO);
     }

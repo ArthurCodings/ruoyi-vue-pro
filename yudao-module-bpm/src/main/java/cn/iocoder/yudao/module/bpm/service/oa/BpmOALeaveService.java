@@ -42,6 +42,14 @@ public interface BpmOALeaveService {
     BpmOALeaveDO getLeave(Long id);
 
     /**
+     * 根据流程实例编号获取请假申请
+     *
+     * @param processInstanceId 流程实例编号
+     * @return 请假申请，未找到返回 null
+     */
+    BpmOALeaveDO getLeaveByProcessInstanceId(String processInstanceId);
+
+    /**
      * 获得请假申请分页
      *
      * @param userId 用户编号
