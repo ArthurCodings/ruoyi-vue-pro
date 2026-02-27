@@ -106,20 +106,26 @@ public class FileController {
     public void getFileContent(HttpServletRequest request,
                                HttpServletResponse response,
                                @PathVariable("configId") Long configId) throws Exception {
-        // 获取请求的路径
-        String path = StrUtil.subAfter(request.getRequestURI(), "/get/", false);
+        String requestUri = request.getRequestURI();
+        // 获取请求的路径（兼容 /admin-api/infra/file/29/get/xxx 与 /infra/file/29/get/xxx 两种格式）
+        String path = StrUtil.subAfter(requestUri, "/get/", false);
         if (StrUtil.isEmpty(path)) {
+            log.warn("[getFileContent][requestUri({}) 无法解析 path]", requestUri);
             throw new IllegalArgumentException("结尾的 path 路径必须传递");
         }
-        // 解码，解决中文路径的问题
+        // 解码，解决中文路径、空格(%20)等问题
         // https://gitee.com/zhijiantianya/ruoyi-vue-pro/pulls/807/
         // https://gitee.com/zhijiantianya/ruoyi-vue-pro/pulls/1432/
         path = URLUtil.decode(path, StandardCharsets.UTF_8, false);
+        // 去除可能的查询参数
+        if (path.contains("?")) {
+            path = StrUtil.subBefore(path, "?", false);
+        }
 
         // 读取内容
         byte[] content = fileService.getFileContent(configId, path);
         if (content == null) {
-            log.warn("[getFileContent][configId({}) path({}) 文件不存在]", configId, path);
+            log.warn("[getFileContent][configId({}) path({}) 文件不存在，requestUri={}]", configId, path, requestUri);
             response.setStatus(HttpStatus.NOT_FOUND.value());
             return;
         }

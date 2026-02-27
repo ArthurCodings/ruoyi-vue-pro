@@ -1,5 +1,7 @@
 server:
   port: 48080
+  address: 0.0.0.0  # Docker 内必须监听所有网卡，否则其他容器无法访问
+  forward-headers-strategy: none  # 禁用 X-Forwarded 头处理，避免 SLB/代理改写路径导致 permitAll 不匹配
 
 --- #################### 数据库相关配置 ####################
 
@@ -47,22 +49,22 @@ spring:
       primary: master
       datasource:
         master:
-          url: jdbc:mysql://127.0.0.1:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true # MySQL Connector/J 8.X 连接的示例
+          url: jdbc:mysql://mysql:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true # Docker 内用容器端口 3306，宿主机映射 33061
           username: root
-          password: 1207
+          password: TH0901th
         slave: # 模拟从库，可根据自己需要修改 # 模拟从库，可根据自己需要修改
           lazy: true # 开启懒加载，保证启动速度
-          url: jdbc:mysql://127.0.0.1:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true # MySQL Connector/J 8.X 连接的示例
+          url: jdbc:mysql://mysql:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true # Docker 内用容器端口 3306，宿主机映射 33061
           username: root
-          password: 1207
+          password: TH0901th
 
   # Redis 配置。Redisson 默认的配置足够使用，一般不需要进行调优
   data:
     redis:
-      host: 400-infra.server.iocoder.cn # 地址
-      port: 6379 # 端口
+      host: redis # 地址
+      port: 6379 # Docker 内用容器端口 6379，宿主机映射 63791
       database: 1 # 数据库索引
-#    password: 123456 # 密码，建议生产环境开启
+      password: TH0901th # 密码，建议生产环境开启
 
 --- #################### 定时任务相关配置 ####################
 
@@ -171,6 +173,24 @@ wx: # 参见 https://github.com/Wechat-Group/WxJava/blob/develop/spring-boot-sta
 
 # 芋道配置项，设置当前项目所有自定义的配置
 yudao:
+  captcha:
+    enable: false # 部署环境可先关闭验证码，或确保镜像已安装 fontconfig ttf-dejavu
+  # 注意：免登录白名单必须配置在 yudao.security 下，SecurityProperties 使用该前缀
+  # yudao.web.security 下的 permit-all_urls 不会被读取！
+  security:
+    permit-all_urls:
+      - /admin-api/mp/open/** # 微信回调等
+      - /admin-api/system/tenant/get-by-website
+      - /admin-api/system/tenant/get-id-by-name
+      - /admin-api/system/tenant/simple-list
+      # 兜底：外部代理可能改写路径（带前缀或去前缀）
+      - /**/admin-api/system/tenant/get-by-website
+      - /**/admin-api/system/tenant/get-id-by-name
+      - /**/admin-api/system/tenant/simple-list
+      # 若 SLB/网关 转发时去掉了 /admin-api 前缀，后端收到 /system/tenant/...
+      - /system/tenant/get-by-website
+      - /system/tenant/get-id-by-name
+      - /system/tenant/simple-list
   pay:
     order-notify-url: http://yunai.natapp1.cc/admin-api/pay/notify/order # 支付渠道的【支付】回调地址
     refund-notify-url: http://yunai.natapp1.cc/admin-api/pay/notify/refund # 支付渠道的【退款】回调地址
@@ -210,3 +230,12 @@ justauth:
     type: REDIS
     prefix: 'social_auth_state:' # 缓存前缀，目前只对 Redis 缓存生效，默认 JUSTAUTH::STATE::
     timeout: 24h # 超时时长，目前只对 Redis 缓存生效，默认 3 分钟
+
+
+flowable:
+  # false: 表已由 flowable-fix-act-ge-property.sql 或首次启动创建，不再自动更新
+  database-schema-update: false
+  # 禁用事件注册：避免 FLM_* 表重复外键约束导致启动失败（Duplicate foreign key 'FLM_FK_EVENT_RSRC_DPL'）
+  eventregistry:
+    enabled: false
+    database-schema-update: false

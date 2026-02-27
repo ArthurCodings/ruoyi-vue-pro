@@ -7,6 +7,7 @@ import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.security.config.SecurityProperties;
 import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
+import cn.iocoder.yudao.framework.tenant.core.context.TenantContextHolder;
 import cn.iocoder.yudao.module.system.controller.admin.auth.vo.*;
 import cn.iocoder.yudao.module.system.convert.auth.AuthConvert;
 import cn.iocoder.yudao.module.system.dal.dataobject.permission.MenuDO;
@@ -66,7 +67,18 @@ public class AuthController {
     @PermitAll
     @Operation(summary = "使用账号密码登录")
     public CommonResult<AuthLoginRespVO> login(@RequestBody @Valid AuthLoginReqVO reqVO) {
-        return success(authService.login(reqVO));
+        // 支持从请求体传入 tenantId，便于前端在解析 get-by-website 后直接传入
+        if (reqVO.getTenantId() != null) {
+            TenantContextHolder.setTenantId(reqVO.getTenantId());
+            TenantContextHolder.setIgnore(false);
+        }
+        try {
+            return success(authService.login(reqVO));
+        } finally {
+            if (reqVO.getTenantId() != null) {
+                TenantContextHolder.clear();
+            }
+        }
     }
 
     @PostMapping("/logout")

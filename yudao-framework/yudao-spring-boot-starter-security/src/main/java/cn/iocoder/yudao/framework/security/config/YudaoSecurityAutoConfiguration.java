@@ -3,6 +3,7 @@ package cn.iocoder.yudao.framework.security.config;
 import cn.iocoder.yudao.framework.common.biz.system.oauth2.OAuth2TokenCommonApi;
 import cn.iocoder.yudao.framework.common.biz.system.permission.PermissionCommonApi;
 import cn.iocoder.yudao.framework.security.core.context.TransmittableThreadLocalSecurityContextHolderStrategy;
+import cn.iocoder.yudao.framework.security.core.filter.RequestPathDebugFilter;
 import cn.iocoder.yudao.framework.security.core.filter.TokenAuthenticationFilter;
 import cn.iocoder.yudao.framework.security.core.handler.AccessDeniedHandlerImpl;
 import cn.iocoder.yudao.framework.security.core.handler.AuthenticationEntryPointImpl;
@@ -14,7 +15,9 @@ import org.springframework.beans.factory.config.MethodInvokingFactoryBean;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureOrder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,6 +39,18 @@ public class YudaoSecurityAutoConfiguration {
 
     @Resource
     private SecurityProperties securityProperties;
+
+    /**
+     * 临时调试：打印 /admin-api/system/tenant 请求的实际路径，排查 permitAll 不匹配问题。
+     * 仅 dev 环境启用，排查完成后删除此 Bean。
+     */
+    @Bean
+    @Profile("dev")
+    public FilterRegistrationBean<RequestPathDebugFilter> requestPathDebugFilter() {
+        FilterRegistrationBean<RequestPathDebugFilter> bean = new FilterRegistrationBean<>(new RequestPathDebugFilter());
+        bean.setOrder(-101);
+        return bean;
+    }
 
     /**
      * 认证失败处理类 Bean

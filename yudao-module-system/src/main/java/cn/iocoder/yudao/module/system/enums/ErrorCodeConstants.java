@@ -168,4 +168,9 @@ public interface ErrorCodeConstants {
     // ========== 站内信发送 1-002-028-000 ==========
     ErrorCode NOTIFY_SEND_TEMPLATE_PARAM_MISS = new ErrorCode(1_002_028_000, "模板参数({})缺失");
 
+    // ========== IM 模块 1-002-030-000 ==========
+    ErrorCode MESSAGE_NOT_EXISTS = new ErrorCode(1_002_030_000, "IM 消息不存在");
+    ErrorCode CONVERSATION_NOT_EXISTS = new ErrorCode(1_002_030_001, "IM 会话不存在");
+    ErrorCode CONVERSATION_MEMBER_NOT_EXISTS = new ErrorCode(1_002_030_002, "IM 会话成员不存在");
+
 }

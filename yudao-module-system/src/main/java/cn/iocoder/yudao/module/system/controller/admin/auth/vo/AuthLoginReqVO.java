@@ -21,6 +21,9 @@ import jakarta.validation.constraints.Pattern;
 @Builder
 public class AuthLoginReqVO extends CaptchaVerificationReqVO {
 
+    @Schema(description = "租户编号，可从 get-by-website 接口获取；不传时依赖请求头 tenant-id", example = "1")
+    private Long tenantId;
+
     @Schema(description = "账号", requiredMode = Schema.RequiredMode.REQUIRED, example = "yudaoyuanma")
     @NotEmpty(message = "登录账号不能为空")
     @Length(min = 4, max = 30, message = "账号长度为 4-30 位")
