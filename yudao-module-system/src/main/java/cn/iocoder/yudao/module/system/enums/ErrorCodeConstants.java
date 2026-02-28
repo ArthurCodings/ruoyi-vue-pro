@@ -173,4 +173,22 @@ public interface ErrorCodeConstants {
     ErrorCode CONVERSATION_NOT_EXISTS = new ErrorCode(1_002_030_001, "IM 会话不存在");
     ErrorCode CONVERSATION_MEMBER_NOT_EXISTS = new ErrorCode(1_002_030_002, "IM 会话成员不存在");
 
+    // ========== HR 考勤模块 1-002-031-000 ==========
+    ErrorCode HR_ATTENDANCE_RULE_NOT_FOUND = new ErrorCode(1_002_031_000, "排班规则不存在，请先配置早班或晚班规则");
+    ErrorCode HR_HOLIDAY_NOT_FOUND = new ErrorCode(1_002_031_001, "节假日记录不存在");
+    ErrorCode HR_ATTENDANCE_SCHEDULE_NOT_FOUND = new ErrorCode(1_002_031_002, "排班记录不存在");
+    ErrorCode HR_ATTENDANCE_TODAY_NO_NEED_CLOCK = new ErrorCode(1_002_031_003, "今日无需打卡（休息日或节假日）");
+    ErrorCode HR_ATTENDANCE_ALREADY_CLOCK_IN = new ErrorCode(1_002_031_004, "今日已签到，请勿重复打卡");
+    ErrorCode HR_ATTENDANCE_NOT_CLOCK_IN_YET = new ErrorCode(1_002_031_005, "尚未签到，无法签退");
+    ErrorCode HR_ATTENDANCE_ALREADY_CLOCK_OUT = new ErrorCode(1_002_031_006, "今日已签退，请勿重复打卡");
+
+    // ========== HR 花名册模块 1-002-032-000 ==========
+    ErrorCode HR_EMPLOYEE_NOT_FOUND = new ErrorCode(1_002_032_000, "员工花名册记录不存在");
+
+    // ========== HR 薪资模块 1-002-033-000 ==========
+    ErrorCode HR_SALARY_CONFIG_NOT_FOUND = new ErrorCode(1_002_033_000, "薪资配置不存在，请先初始化");
+    ErrorCode HR_EMPLOYEE_SALARY_NOT_FOUND = new ErrorCode(1_002_033_001, "员工薪资档案不存在");
+    ErrorCode HR_SALARY_MONTHLY_NOT_FOUND = new ErrorCode(1_002_033_002, "月度薪资单不存在");
+    ErrorCode HR_SALARY_MONTHLY_CONFIRMED = new ErrorCode(1_002_033_003, "薪资单已确认，不可修改");
+
 }
