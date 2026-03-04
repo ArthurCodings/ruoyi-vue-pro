@@ -8,6 +8,7 @@ import cn.iocoder.yudao.module.system.controller.admin.hr.attendance.vo.record.A
 import cn.iocoder.yudao.module.system.controller.admin.hr.attendance.vo.record.AttendanceRecordRespVO;
 import cn.iocoder.yudao.module.system.dal.dataobject.hr.attendance.AttendanceRecordDO;
 import cn.iocoder.yudao.module.system.service.hr.attendance.AttendanceRecordService;
+import cn.iocoder.yudao.module.system.service.hr.employee.HrEmployeeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -15,6 +16,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
 
@@ -26,13 +32,17 @@ public class AttendanceRecordController {
 
     @Resource
     private AttendanceRecordService attendanceRecordService;
+    @Resource
+    private HrEmployeeService hrEmployeeService;
 
     @GetMapping("/page")
     @Operation(summary = "获取打卡记录分页列表")
     @PreAuthorize("@ss.hasPermission('system:attendance-schedule:query')")
     public CommonResult<PageResult<AttendanceRecordRespVO>> page(@Validated AttendanceRecordPageReqVO reqVO) {
         PageResult<AttendanceRecordDO> pageResult = attendanceRecordService.getAttendanceRecordPage(reqVO);
-        return success(BeanUtils.toBean(pageResult, AttendanceRecordRespVO.class));
+        PageResult<AttendanceRecordRespVO> voResult = BeanUtils.toBean(pageResult, AttendanceRecordRespVO.class);
+        fillNickname(voResult.getList());
+        return success(voResult);
     }
 
     @PostMapping("/clock-in")
@@ -60,6 +70,14 @@ public class AttendanceRecordController {
             ip = request.getRemoteAddr();
         }
         return ip;
+    }
+
+    /** 批量填充员工姓名 */
+    private void fillNickname(List<AttendanceRecordRespVO> list) {
+        if (list == null || list.isEmpty()) return;
+        Set<Long> userIds = list.stream().map(AttendanceRecordRespVO::getUserId).filter(id -> id != null && id > 0).collect(Collectors.toSet());
+        Map<Long, String> nicknameMap = hrEmployeeService.getNicknameMap(userIds);
+        list.forEach(vo -> vo.setNickname(nicknameMap.getOrDefault(vo.getUserId(), "")));
     }
 
 }

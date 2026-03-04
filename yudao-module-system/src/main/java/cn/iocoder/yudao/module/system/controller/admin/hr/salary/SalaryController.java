@@ -15,8 +15,11 @@ import cn.iocoder.yudao.module.system.controller.admin.hr.salary.vo.employeesala
 import cn.iocoder.yudao.module.system.controller.admin.hr.salary.vo.monthly.SalaryMonthlyPageReqVO;
 import cn.iocoder.yudao.module.system.controller.admin.hr.salary.vo.monthly.SalaryMonthlyRespVO;
 import cn.iocoder.yudao.module.system.controller.admin.hr.salary.vo.monthly.SalaryMonthlyUpdateReqVO;
+import cn.iocoder.yudao.module.system.controller.admin.hr.salary.vo.notice.SalaryConfirmNoticeRespVO;
 import cn.iocoder.yudao.module.system.dal.dataobject.hr.salary.EmployeeSalaryDO;
+import cn.iocoder.yudao.module.system.dal.dataobject.hr.salary.SalaryConfirmNoticeDO;
 import cn.iocoder.yudao.module.system.dal.dataobject.hr.salary.SalaryMonthlyDO;
+import cn.iocoder.yudao.module.system.service.hr.employee.HrEmployeeService;
 import cn.iocoder.yudao.module.system.service.hr.salary.SalaryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -29,7 +32,11 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
@@ -42,6 +49,8 @@ public class SalaryController {
 
     @Resource
     private SalaryService salaryService;
+    @Resource
+    private HrEmployeeService hrEmployeeService;
 
     // ===== 薪资配置 =====
 
@@ -82,7 +91,9 @@ public class SalaryController {
     @PreAuthorize("@ss.hasPermission('system:employee-salary:query')")
     public CommonResult<PageResult<EmployeeSalaryRespVO>> employeePage(@Validated EmployeeSalaryPageReqVO reqVO) {
         PageResult<EmployeeSalaryDO> pageResult = salaryService.getEmployeeSalaryPage(reqVO);
-        return success(BeanUtils.toBean(pageResult, EmployeeSalaryRespVO.class));
+        PageResult<EmployeeSalaryRespVO> voResult = BeanUtils.toBean(pageResult, EmployeeSalaryRespVO.class);
+        fillEmployeeSalaryNickname(voResult.getList());
+        return success(voResult);
     }
 
     // ===== 月度薪资 =====
@@ -92,7 +103,9 @@ public class SalaryController {
     @PreAuthorize("@ss.hasPermission('system:salary-monthly:query')")
     public CommonResult<PageResult<SalaryMonthlyRespVO>> monthlyPage(@Validated SalaryMonthlyPageReqVO reqVO) {
         PageResult<SalaryMonthlyDO> pageResult = salaryService.getSalaryMonthlyPage(reqVO);
-        return success(BeanUtils.toBean(pageResult, SalaryMonthlyRespVO.class));
+        PageResult<SalaryMonthlyRespVO> voResult = BeanUtils.toBean(pageResult, SalaryMonthlyRespVO.class);
+        fillSalaryMonthlyNickname(voResult.getList());
+        return success(voResult);
     }
 
     @PostMapping("/monthly/generate")
@@ -136,8 +149,25 @@ public class SalaryController {
     public void exportExcel(HttpServletResponse response, @Validated SalaryMonthlyPageReqVO reqVO) throws IOException {
         reqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
         List<SalaryMonthlyDO> list = salaryService.getSalaryMonthlyPage(reqVO).getList();
-        ExcelUtils.write(response, "月度薪资.xls", "薪资明细", SalaryMonthlyRespVO.class,
-                BeanUtils.toBean(list, SalaryMonthlyRespVO.class));
+        List<SalaryMonthlyRespVO> voList = BeanUtils.toBean(list, SalaryMonthlyRespVO.class);
+        fillSalaryMonthlyNickname(voList);
+        ExcelUtils.write(response, "月度薪资.xls", "薪资明细", SalaryMonthlyRespVO.class, voList);
+    }
+
+    // ===== 个人中心 =====
+
+    @GetMapping("/monthly/detail")
+    @Operation(summary = "查看薪资计算明细")
+    @Parameter(name = "id", description = "月度薪资ID", required = true)
+    @PreAuthorize("@ss.hasAnyPermissions('system:salary-monthly:query', 'system:salary-monthly:update')")
+    public CommonResult<SalaryMonthlyRespVO> getMonthlyDetail(@RequestParam("id") Long id) {
+        SalaryMonthlyDO monthly = salaryService.getSalaryMonthlyById(id);
+        if (monthly == null) {
+            return success(null);
+        }
+        SalaryMonthlyRespVO vo = BeanUtils.toBean(monthly, SalaryMonthlyRespVO.class);
+        fillSalaryMonthlyNickname(Collections.singletonList(vo));
+        return success(vo);
     }
 
     // ===== 个人中心 =====
@@ -146,14 +176,61 @@ public class SalaryController {
     @Operation(summary = "个人中心 - 最新薪资单")
     public CommonResult<SalaryMonthlyRespVO> myLatest() {
         Long userId = SecurityFrameworkUtils.getLoginUserId();
-        return success(salaryService.getMyLatestSalary(userId));
+        SalaryMonthlyRespVO vo = salaryService.getMyLatestSalary(userId);
+        if (vo != null) fillSalaryMonthlyNickname(Collections.singletonList(vo));
+        return success(vo);
     }
 
     @GetMapping("/my-list")
     @Operation(summary = "个人中心 - 历史薪资列表")
     public CommonResult<List<SalaryMonthlyRespVO>> myList() {
         Long userId = SecurityFrameworkUtils.getLoginUserId();
-        return success(salaryService.getMySalaryList(userId));
+        List<SalaryMonthlyRespVO> list = salaryService.getMySalaryList(userId);
+        fillSalaryMonthlyNickname(list);
+        return success(list);
+    }
+
+    @GetMapping("/my-confirm-notices")
+    @Operation(summary = "个人中心 - 待确认薪资通知单列表")
+    public CommonResult<List<SalaryConfirmNoticeRespVO>> myConfirmNotices() {
+        Long userId = SecurityFrameworkUtils.getLoginUserId();
+        List<SalaryConfirmNoticeDO> list = salaryService.getMyPendingConfirmNotices(userId);
+        List<SalaryConfirmNoticeRespVO> voList = BeanUtils.toBean(list, SalaryConfirmNoticeRespVO.class);
+        fillConfirmNoticeNickname(voList, userId);
+        return success(voList);
+    }
+
+    @PutMapping("/my-confirm")
+    @Operation(summary = "个人中心 - 员工确认薪资通知单")
+    @Parameter(name = "noticeId", description = "薪资确认通知单ID", required = true)
+    public CommonResult<Boolean> myConfirm(@RequestParam("noticeId") Long noticeId) {
+        Long userId = SecurityFrameworkUtils.getLoginUserId();
+        salaryService.employeeConfirmSalary(noticeId, userId);
+        return success(true);
+    }
+
+    /** 批量填充员工薪资档案列表的员工姓名 */
+    private void fillEmployeeSalaryNickname(List<EmployeeSalaryRespVO> list) {
+        if (list == null || list.isEmpty()) return;
+        Set<Long> userIds = list.stream().map(EmployeeSalaryRespVO::getUserId).filter(id -> id != null && id > 0).collect(Collectors.toSet());
+        Map<Long, String> nicknameMap = hrEmployeeService.getNicknameMap(userIds);
+        list.forEach(vo -> vo.setNickname(nicknameMap.getOrDefault(vo.getUserId(), "")));
+    }
+
+    /** 批量填充月度薪资列表的员工姓名 */
+    private void fillSalaryMonthlyNickname(List<SalaryMonthlyRespVO> list) {
+        if (list == null || list.isEmpty()) return;
+        Set<Long> userIds = list.stream().map(SalaryMonthlyRespVO::getUserId).filter(id -> id != null && id > 0).collect(Collectors.toSet());
+        Map<Long, String> nicknameMap = hrEmployeeService.getNicknameMap(userIds);
+        list.forEach(vo -> vo.setNickname(nicknameMap.getOrDefault(vo.getUserId(), "")));
+    }
+
+    /** 填充薪资确认通知单的员工姓名 */
+    private void fillConfirmNoticeNickname(List<SalaryConfirmNoticeRespVO> list, Long currentUserId) {
+        if (list == null || list.isEmpty()) return;
+        Set<Long> userIds = list.stream().map(SalaryConfirmNoticeRespVO::getUserId).filter(id -> id != null && id > 0).collect(Collectors.toSet());
+        Map<Long, String> nicknameMap = hrEmployeeService.getNicknameMap(userIds);
+        list.forEach(vo -> vo.setNickname(nicknameMap.getOrDefault(vo.getUserId(), "")));
     }
 
 }

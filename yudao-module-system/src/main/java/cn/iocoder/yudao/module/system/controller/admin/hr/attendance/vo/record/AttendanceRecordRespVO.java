@@ -14,6 +14,8 @@ public class AttendanceRecordRespVO {
     private Long id;
     @Schema(description = "员工用户ID")
     private Long userId;
+    @Schema(description = "员工姓名（用于前端展示）")
+    private String nickname;
     @Schema(description = "关联排班ID")
     private Long scheduleId;
     @Schema(description = "考勤日期")

@@ -15,12 +15,16 @@ public class EmployeeSalaryRespVO {
     private Long id;
     @Schema(description = "员工用户ID")
     private Long userId;
+    @Schema(description = "员工姓名（用于前端展示）")
+    private String nickname;
     @Schema(description = "基本工资（元）")
     private BigDecimal baseSalary;
     @Schema(description = "岗位工资（元）")
     private BigDecimal positionSalary;
     @Schema(description = "补贴（元）")
     private BigDecimal allowance;
+    @Schema(description = "个人全勤奖金额（元，0=使用全局配置）")
+    private BigDecimal fullAttendanceAmount;
     @Schema(description = "生效日期")
     private LocalDate effectiveDate;
     @Schema(description = "备注")

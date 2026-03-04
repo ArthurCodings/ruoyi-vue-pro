@@ -24,4 +24,16 @@ public interface HolidayMapper extends BaseMapperX<HolidayDO> {
         return selectList(HolidayDO::getYear, year);
     }
 
+    /**
+     * 查询某月的法定节假日休息日（type=1），用于日薪计算中扣除假期
+     * yearMonth 格式：202603
+     */
+    default List<HolidayDO> selectRestDaysByMonth(Integer yearMonth) {
+        java.time.LocalDate start = java.time.LocalDate.of(yearMonth / 100, yearMonth % 100, 1);
+        java.time.LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
+        return selectList(new LambdaQueryWrapperX<HolidayDO>()
+                .eq(HolidayDO::getType, 1)
+                .between(HolidayDO::getHolidayDate, start, end));
+    }
+
 }

@@ -35,8 +35,12 @@ public class AttendanceRecordDO extends TenantBaseDO {
     private String clockInIp;
     /** 签退IP */
     private String clockOutIp;
-    /** 考勤状态：0=正常 1=迟到 2=早退 3=缺勤 4=请假 5=加班 */
+    /** 考勤状态：0=正常 1=迟到 2=早退 3=缺勤 4=请假 5=加班 6=病假 7=事假 */
     private Integer status;
+    /** 请假类型（0=无 1=病假 2=事假，流程审批通过后写入） */
+    private Integer leaveType;
+    /** 来源流程实例ID（考勤被流程调整时记录，用于溯源；普通打卡时为空字符串） */
+    private String processInstanceId;
     /** 备注 */
     private String remark;
 

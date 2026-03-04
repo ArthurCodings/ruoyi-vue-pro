@@ -14,12 +14,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -48,6 +51,7 @@ public class AttendanceRecordServiceImpl implements AttendanceRecordService {
     @Transactional(rollbackFor = Exception.class)
     public Long clockIn(Long userId, String ip) {
         LocalDate today = LocalDate.now();
+        LocalDateTime now = LocalDateTime.now();
         // 校验今日排班
         AttendanceScheduleDO schedule = scheduleMapper.selectByUserAndDate(userId, today);
         if (schedule == null || !Boolean.TRUE.equals(schedule.getIsNeedClock())) {
@@ -58,9 +62,20 @@ public class AttendanceRecordServiceImpl implements AttendanceRecordService {
         if (existing != null && existing.getClockInTime() != null) {
             throw exception(HR_ATTENDANCE_ALREADY_CLOCK_IN);
         }
+        // 根据排班规则判定是否迟到：签到时间 > 上班时间 + 迟到阈值分钟
+        int status = 0;
+        AttendanceRuleDO rule = ruleMapper.selectById(schedule.getRuleId());
+        if (rule != null) {
+            LocalTime startTime = rule.getWorkStartTime();
+            int lateThreshold = rule.getLateThresholdMinutes() != null ? rule.getLateThresholdMinutes() : 15;
+            if (now.toLocalTime().isAfter(startTime.plusMinutes(lateThreshold))) {
+                status = 1; // 迟到
+            }
+        }
         if (existing != null) {
-            existing.setClockInTime(LocalDateTime.now());
+            existing.setClockInTime(now);
             existing.setClockInIp(ip);
+            existing.setStatus(status);
             recordMapper.updateById(existing);
             return existing.getId();
         }
@@ -68,10 +83,10 @@ public class AttendanceRecordServiceImpl implements AttendanceRecordService {
         record.setUserId(userId);
         record.setScheduleId(schedule.getId());
         record.setAttendanceDate(today);
-        record.setClockInTime(LocalDateTime.now());
+        record.setClockInTime(now);
         record.setClockInIp(ip != null ? ip : "");
         record.setClockOutIp("");
-        record.setStatus(0);
+        record.setStatus(status);
         record.setRemark("");
         recordMapper.insert(record);
         return record.getId();
@@ -93,6 +108,11 @@ public class AttendanceRecordServiceImpl implements AttendanceRecordService {
         recordMapper.updateById(record);
     }
 
+    /**
+     * 每日 00:10 执行：统计昨日考勤状态。
+     * 缺勤判定：过了当天24点未签到即为缺勤（无打卡记录或无签到时间则记缺勤）
+     * 迟到/早退：根据排班规则的 work_start_time + late_threshold、work_end_time - early_leave_threshold 判定
+     */
     @Override
     @Scheduled(cron = "0 10 0 * * ?")
     @Transactional(rollbackFor = Exception.class)
@@ -117,7 +137,7 @@ public class AttendanceRecordServiceImpl implements AttendanceRecordService {
             AttendanceRecordDO record = recordMapper.selectByUserAndDate(schedule.getUserId(), yesterday);
             int status;
             if (record == null) {
-                // 无打卡记录 => 缺勤，需新建
+                // 过了24点无打卡记录 => 缺勤
                 record = new AttendanceRecordDO();
                 record.setUserId(schedule.getUserId());
                 record.setScheduleId(schedule.getId());
@@ -132,7 +152,7 @@ public class AttendanceRecordServiceImpl implements AttendanceRecordService {
             }
 
             if (record.getClockInTime() == null) {
-                status = 3; // 缺勤
+                status = 3; // 过了24点未签到 => 缺勤
             } else if (record.getClockOutTime() == null) {
                 status = 2; // 未签退视为早退
             } else {
@@ -166,9 +186,9 @@ public class AttendanceRecordServiceImpl implements AttendanceRecordService {
     @Override
     public AttendanceMonthlySummaryVO getMyMonthlySummary(Long userId, Integer yearMonth) {
         int shouldAttend = scheduleMapper.countNeedClockByUserAndMonth(userId, yearMonth);
-        int actualAttend = recordMapper.countByUserMonthAndStatusIn(userId, yearMonth, List.of(0, 1));
-        int lateCount = recordMapper.countByUserMonthAndStatusIn(userId, yearMonth, List.of(1));
-        int absentCount = recordMapper.countByUserMonthAndStatusIn(userId, yearMonth, List.of(3));
+        int actualAttend = recordMapper.countByUserMonthAndStatusIn(userId, yearMonth, Arrays.asList(0, 1));
+        int lateCount = recordMapper.countByUserMonthAndStatusIn(userId, yearMonth, Arrays.asList(1));
+        int absentCount = recordMapper.countByUserMonthAndStatusIn(userId, yearMonth, Arrays.asList(3));
 
         // 构建每日状态列表
         List<AttendanceMonthlySummaryVO.DailyStatusVO> dailyList = new ArrayList<>();
@@ -188,6 +208,104 @@ public class AttendanceRecordServiceImpl implements AttendanceRecordService {
         }
 
         return new AttendanceMonthlySummaryVO(shouldAttend, actualAttend, lateCount, absentCount, dailyList);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateLeaveStatus(Long userId, String startDateStr, String endDateStr,
+                                  int status, int leaveType, String processInstanceId) {
+        LocalDate startDate = LocalDate.parse(startDateStr, DateTimeFormatter.ISO_LOCAL_DATE);
+        LocalDate endDate = LocalDate.parse(endDateStr, DateTimeFormatter.ISO_LOCAL_DATE);
+        // 遍历请假日期区间内的每一天
+        LocalDate cur = startDate;
+        while (!cur.isAfter(endDate)) {
+            final LocalDate dateToUpdate = cur;
+            // 只更新需要打卡的工作日（排班中 is_need_clock=1 的日期）
+            AttendanceScheduleDO schedule = scheduleMapper.selectByUserAndDate(userId, dateToUpdate);
+            if (schedule == null || !Boolean.TRUE.equals(schedule.getIsNeedClock())) {
+                cur = cur.plusDays(1);
+                continue;
+            }
+            AttendanceRecordDO record = recordMapper.selectByUserAndDate(userId, dateToUpdate);
+            if (record == null) {
+                // 无打卡记录，新建一条
+                record = new AttendanceRecordDO();
+                record.setUserId(userId);
+                record.setScheduleId(schedule.getId());
+                record.setAttendanceDate(dateToUpdate);
+                record.setClockInIp("");
+                record.setClockOutIp("");
+                record.setRemark("");
+                record.setStatus(status);
+                record.setLeaveType(leaveType);
+                record.setProcessInstanceId(processInstanceId != null ? processInstanceId : "");
+                recordMapper.insert(record);
+            } else {
+                // 更新现有记录
+                record.setStatus(status);
+                record.setLeaveType(leaveType);
+                record.setProcessInstanceId(processInstanceId != null ? processInstanceId : "");
+                recordMapper.updateById(record);
+            }
+            cur = cur.plusDays(1);
+        }
+        log.info("[updateLeaveStatus] userId={} 日期={}-{} 状态={} 流程={}", userId, startDateStr, endDateStr, status, processInstanceId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void supplementClock(Long userId, String supplementDateStr, String clockType,
+                                String clockInTimeStr, String clockOutTimeStr, String processInstanceId) {
+        LocalDate supplementDate = LocalDate.parse(supplementDateStr, DateTimeFormatter.ISO_LOCAL_DATE);
+        AttendanceScheduleDO schedule = scheduleMapper.selectByUserAndDate(userId, supplementDate);
+        AttendanceRecordDO record = recordMapper.selectByUserAndDate(userId, supplementDate);
+        if (record == null) {
+            record = new AttendanceRecordDO();
+            record.setUserId(userId);
+            record.setScheduleId(schedule != null ? schedule.getId() : 0L);
+            record.setAttendanceDate(supplementDate);
+            record.setClockInIp("");
+            record.setClockOutIp("");
+            record.setRemark("补打卡");
+            record.setLeaveType(0);
+        }
+        // 根据补卡类型写入时间
+        if ("1".equals(clockType) || "3".equals(clockType)) {
+            if (StringUtils.hasText(clockInTimeStr)) {
+                LocalTime clockIn = LocalTime.parse(clockInTimeStr, DateTimeFormatter.ofPattern("HH:mm:ss"));
+                record.setClockInTime(supplementDate.atTime(clockIn));
+            }
+        }
+        if ("2".equals(clockType) || "3".equals(clockType)) {
+            if (StringUtils.hasText(clockOutTimeStr)) {
+                LocalTime clockOut = LocalTime.parse(clockOutTimeStr, DateTimeFormatter.ofPattern("HH:mm:ss"));
+                record.setClockOutTime(supplementDate.atTime(clockOut));
+            }
+        }
+        record.setProcessInstanceId(processInstanceId != null ? processInstanceId : "");
+        // 重新计算状态
+        if (schedule != null) {
+            AttendanceRuleDO rule = ruleMapper.selectById(schedule.getRuleId());
+            if (rule != null && record.getClockInTime() != null) {
+                LocalTime clockIn = record.getClockInTime().toLocalTime();
+                boolean late = clockIn.isAfter(rule.getWorkStartTime().plusMinutes(rule.getLateThresholdMinutes()));
+                if (record.getClockOutTime() == null) {
+                    record.setStatus(2); // 未签退
+                } else {
+                    LocalTime clockOut = record.getClockOutTime().toLocalTime();
+                    boolean earlyLeave = clockOut.isBefore(rule.getWorkEndTime().minusMinutes(rule.getEarlyLeaveThresholdMinutes()));
+                    record.setStatus(late ? 1 : (earlyLeave ? 2 : 0));
+                }
+            }
+        } else {
+            record.setStatus(0);
+        }
+        if (record.getId() == null) {
+            recordMapper.insert(record);
+        } else {
+            recordMapper.updateById(record);
+        }
+        log.info("[supplementClock] userId={} 日期={} 类型={} 流程={}", userId, supplementDateStr, clockType, processInstanceId);
     }
 
 }

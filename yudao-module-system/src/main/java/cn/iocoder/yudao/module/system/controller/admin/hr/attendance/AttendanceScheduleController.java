@@ -8,7 +8,9 @@ import cn.iocoder.yudao.module.system.controller.admin.hr.attendance.vo.schedule
 import cn.iocoder.yudao.module.system.controller.admin.hr.attendance.vo.schedule.AttendanceScheduleRespVO;
 import cn.iocoder.yudao.module.system.controller.admin.hr.attendance.vo.schedule.AttendanceScheduleUpdateReqVO;
 import cn.iocoder.yudao.module.system.dal.dataobject.hr.attendance.AttendanceScheduleDO;
+import cn.iocoder.yudao.module.system.dal.dataobject.hr.employee.HrEmployeeDO;
 import cn.iocoder.yudao.module.system.service.hr.attendance.AttendanceScheduleService;
+import cn.iocoder.yudao.module.system.service.hr.employee.HrEmployeeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,6 +22,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.YearMonth;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
 
@@ -31,13 +36,17 @@ public class AttendanceScheduleController {
 
     @Resource
     private AttendanceScheduleService attendanceScheduleService;
+    @Resource
+    private HrEmployeeService hrEmployeeService;
 
     @GetMapping("/page")
     @Operation(summary = "获取排班分页列表")
     @PreAuthorize("@ss.hasPermission('system:attendance-schedule:query')")
     public CommonResult<PageResult<AttendanceScheduleRespVO>> page(@Validated AttendanceSchedulePageReqVO reqVO) {
         PageResult<AttendanceScheduleDO> pageResult = attendanceScheduleService.getAttendanceSchedulePage(reqVO);
-        return success(BeanUtils.toBean(pageResult, AttendanceScheduleRespVO.class));
+        PageResult<AttendanceScheduleRespVO> voResult = BeanUtils.toBean(pageResult, AttendanceScheduleRespVO.class);
+        fillNickname(voResult.getList());
+        return success(voResult);
     }
 
     @PostMapping("/generate")
@@ -81,7 +90,28 @@ public class AttendanceScheduleController {
             YearMonth ym = YearMonth.now();
             yearMonth = ym.getYear() * 100 + ym.getMonthValue();
         }
-        return success(attendanceScheduleService.getMyMonthlySchedule(userId, yearMonth));
+        List<AttendanceScheduleRespVO> list = attendanceScheduleService.getMyMonthlySchedule(userId, yearMonth);
+        fillNickname(list);
+        return success(list);
+    }
+
+    /** 批量填充员工信息（姓名、部门、岗位），联查 hr_employee 表 */
+    private void fillNickname(List<AttendanceScheduleRespVO> list) {
+        if (list == null || list.isEmpty()) return;
+        Set<Long> userIds = list.stream().map(AttendanceScheduleRespVO::getUserId).filter(id -> id != null && id > 0).collect(Collectors.toSet());
+        Map<Long, HrEmployeeDO> employeeMap = hrEmployeeService.getEmployeeMap(userIds);
+        list.forEach(vo -> {
+            HrEmployeeDO emp = employeeMap.get(vo.getUserId());
+            if (emp != null) {
+                vo.setNickname(emp.getNickname() != null ? emp.getNickname() : "");
+                vo.setDeptName(emp.getDeptName() != null ? emp.getDeptName() : "");
+                vo.setPostName(emp.getPostName() != null ? emp.getPostName() : "");
+            } else {
+                vo.setNickname("");
+                vo.setDeptName("");
+                vo.setPostName("");
+            }
+        });
     }
 
 }

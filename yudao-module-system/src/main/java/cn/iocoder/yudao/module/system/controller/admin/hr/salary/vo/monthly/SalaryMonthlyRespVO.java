@@ -18,6 +18,9 @@ public class SalaryMonthlyRespVO {
     @Schema(description = "员工用户ID")
     @ExcelProperty("员工ID")
     private Long userId;
+    @Schema(description = "员工姓名（用于前端展示）")
+    @ExcelProperty("员工姓名")
+    private String nickname;
     @Schema(description = "年月，如 202602")
     @ExcelProperty("年月")
     private Integer yearMonth;
@@ -39,6 +42,31 @@ public class SalaryMonthlyRespVO {
     @Schema(description = "全勤奖")
     @ExcelProperty("全勤奖")
     private BigDecimal fullAttendanceBonus;
+    @Schema(description = "日薪快照（基本工资÷当月实际工作日数）")
+    private BigDecimal dailySalary;
+    @Schema(description = "迟到扣款")
+    @ExcelProperty("迟到扣款")
+    private BigDecimal lateDeduction;
+    @Schema(description = "病假天数")
+    private Integer sickLeaveDays;
+    @Schema(description = "病假扣款（扣20%）")
+    @ExcelProperty("病假扣款")
+    private BigDecimal sickLeaveDeduction;
+    @Schema(description = "事假天数")
+    private Integer casualLeaveDays;
+    @Schema(description = "事假扣款（扣全天）")
+    @ExcelProperty("事假扣款")
+    private BigDecimal casualLeaveDeduction;
+    @Schema(description = "缺勤扣款")
+    @ExcelProperty("缺勤扣款")
+    private BigDecimal absentDeduction;
+    @Schema(description = "考勤扣款合计")
+    @ExcelProperty("考勤扣款")
+    private BigDecimal attendanceDeduction;
+    @Schema(description = "薪资计算明细JSON（用于前端查看明细弹窗）")
+    private String salaryDetail;
+    @Schema(description = "关联薪资确认通知单ID")
+    private Long confirmNoticeId;
     @Schema(description = "应发工资合计")
     @ExcelProperty("应发工资")
     private BigDecimal totalSalary;

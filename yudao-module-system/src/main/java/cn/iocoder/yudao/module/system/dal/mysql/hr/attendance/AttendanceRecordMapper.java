@@ -46,4 +46,20 @@ public interface AttendanceRecordMapper extends BaseMapperX<AttendanceRecordDO> 
                 .in(AttendanceRecordDO::getStatus, statuses)));
     }
 
+    default int countByUserMonthAndStatus(Long userId, Integer yearMonth, Integer status) {
+        LocalDate start = LocalDate.of(yearMonth / 100, yearMonth % 100, 1);
+        LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
+        return Math.toIntExact(selectCount(new LambdaQueryWrapperX<AttendanceRecordDO>()
+                .eq(AttendanceRecordDO::getUserId, userId)
+                .between(AttendanceRecordDO::getAttendanceDate, start, end)
+                .eq(AttendanceRecordDO::getStatus, status)));
+    }
+
+    default List<AttendanceRecordDO> selectListByUserAndDateRange(Long userId, LocalDate start, LocalDate end) {
+        return selectList(new LambdaQueryWrapperX<AttendanceRecordDO>()
+                .eq(AttendanceRecordDO::getUserId, userId)
+                .between(AttendanceRecordDO::getAttendanceDate, start, end)
+                .orderByAsc(AttendanceRecordDO::getAttendanceDate));
+    }
+
 }

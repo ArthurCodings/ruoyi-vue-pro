@@ -29,6 +29,8 @@ public class EmployeeSalaryDO extends TenantBaseDO {
     private BigDecimal positionSalary;
     /** 补贴（元） */
     private BigDecimal allowance;
+    /** 个人全勤奖金额（元，0=使用全局配置 hr_salary_config.full_attendance_amount） */
+    private BigDecimal fullAttendanceAmount;
     /** 生效日期 */
     private LocalDate effectiveDate;
     /** 备注（如调薪原因） */

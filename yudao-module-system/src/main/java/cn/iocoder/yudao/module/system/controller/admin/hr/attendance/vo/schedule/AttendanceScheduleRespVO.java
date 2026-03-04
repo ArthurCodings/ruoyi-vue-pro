@@ -14,6 +14,12 @@ public class AttendanceScheduleRespVO {
     private Long id;
     @Schema(description = "员工用户ID")
     private Long userId;
+    @Schema(description = "员工姓名（用于前端展示）")
+    private String nickname;
+    @Schema(description = "部门名称（用于前端展示）")
+    private String deptName;
+    @Schema(description = "岗位名称（用于前端展示）")
+    private String postName;
     @Schema(description = "当日排班规则ID")
     private Long ruleId;
     @Schema(description = "班次类型：1=早班 2=晚班")

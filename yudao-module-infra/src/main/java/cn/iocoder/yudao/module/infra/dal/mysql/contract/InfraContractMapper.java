@@ -39,4 +39,15 @@ public interface InfraContractMapper extends BaseMapperX<InfraContractDO> {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    /**
+     * 查询某用户所有生效合同，用于按时间比例计算本月提成
+     * 返回 commission_amount > 0 的生效合同，由 Service 层在 Java 中计算日期交叉比例
+     */
+    default List<InfraContractDO> selectActiveWithCommissionByUser(Long userId) {
+        return selectList(new LambdaQueryWrapperX<InfraContractDO>()
+                .eq(InfraContractDO::getResponsibleUserId, userId)
+                .eq(InfraContractDO::getStatus, 1)
+                .gt(InfraContractDO::getCommissionAmount, BigDecimal.ZERO));
+    }
+
 }

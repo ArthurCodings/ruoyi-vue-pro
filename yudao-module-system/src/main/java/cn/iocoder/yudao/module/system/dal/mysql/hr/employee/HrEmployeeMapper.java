@@ -7,6 +7,8 @@ import cn.iocoder.yudao.module.system.controller.admin.hr.employee.vo.HrEmployee
 import cn.iocoder.yudao.module.system.dal.dataobject.hr.employee.HrEmployeeDO;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 @Mapper
@@ -27,6 +29,14 @@ public interface HrEmployeeMapper extends BaseMapperX<HrEmployeeDO> {
 
     default List<HrEmployeeDO> selectListByStatus(Integer employmentStatus) {
         return selectList(HrEmployeeDO::getEmploymentStatus, employmentStatus);
+    }
+
+    /** 根据用户ID列表批量查询花名册（用于填充员工姓名） */
+    default List<HrEmployeeDO> selectListByUserIds(Collection<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return selectList(HrEmployeeDO::getUserId, userIds);
     }
 
 }

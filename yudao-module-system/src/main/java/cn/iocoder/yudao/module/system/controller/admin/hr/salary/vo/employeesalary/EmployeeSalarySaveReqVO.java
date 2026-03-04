@@ -27,6 +27,9 @@ public class EmployeeSalarySaveReqVO {
     @Schema(description = "补贴（元）")
     private BigDecimal allowance;
 
+    @Schema(description = "个人全勤奖金额（元，0=使用全局配置 hr_salary_config.full_attendance_amount）")
+    private BigDecimal fullAttendanceAmount;
+
     @Schema(description = "生效日期", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "生效日期不能为空")
     private LocalDate effectiveDate;

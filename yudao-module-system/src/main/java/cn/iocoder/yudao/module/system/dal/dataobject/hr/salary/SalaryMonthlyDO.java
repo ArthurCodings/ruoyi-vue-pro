@@ -38,6 +38,26 @@ public class SalaryMonthlyDO extends TenantBaseDO {
     private BigDecimal allowance;
     /** 全勤奖 */
     private BigDecimal fullAttendanceBonus;
+    /** 日薪快照（基本工资 ÷ 当月实际工作日数，四舍五入保留2位） */
+    private BigDecimal dailySalary;
+    /** 迟到扣款（第2次起每次扣30元） */
+    private BigDecimal lateDeduction;
+    /** 病假天数 */
+    private Integer sickLeaveDays;
+    /** 病假扣款（扣20%：日薪 × 病假天数 × 0.2） */
+    private BigDecimal sickLeaveDeduction;
+    /** 事假天数 */
+    private Integer casualLeaveDays;
+    /** 事假扣款（扣全天：日薪 × 事假天数） */
+    private BigDecimal casualLeaveDeduction;
+    /** 缺勤扣款（扣全天：日薪 × 缺勤天数） */
+    private BigDecimal absentDeduction;
+    /** 考勤扣款合计 = 迟到扣款 + 病假扣款 + 事假扣款 + 缺勤扣款 */
+    private BigDecimal attendanceDeduction;
+    /** 薪资计算明细JSON（供前端"查看明细"使用） */
+    private String salaryDetail;
+    /** 关联薪资确认通知单ID（0=尚未发送通知） */
+    private Long confirmNoticeId;
     /** 应发工资合计 */
     private BigDecimal totalSalary;
     /** 应出勤天数 */

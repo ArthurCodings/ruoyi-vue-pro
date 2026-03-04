@@ -190,5 +190,16 @@ public interface ErrorCodeConstants {
     ErrorCode HR_EMPLOYEE_SALARY_NOT_FOUND = new ErrorCode(1_002_033_001, "员工薪资档案不存在");
     ErrorCode HR_SALARY_MONTHLY_NOT_FOUND = new ErrorCode(1_002_033_002, "月度薪资单不存在");
     ErrorCode HR_SALARY_MONTHLY_CONFIRMED = new ErrorCode(1_002_033_003, "薪资单已确认，不可修改");
+    ErrorCode HR_SALARY_CONFIRM_NOTICE_NOT_FOUND = new ErrorCode(1_002_033_004, "薪资确认通知单不存在");
+    ErrorCode HR_SALARY_CONFIRM_NOTICE_ALREADY_CONFIRMED = new ErrorCode(1_002_033_005, "薪资确认通知单已确认");
+    ErrorCode HR_SALARY_CONFIRM_NOTICE_ALREADY_SENT = new ErrorCode(1_002_033_006, "该薪资单已发送确认通知，请等待员工确认");
+
+    // ========== HR 绩效模块 1-002-034-000 ==========
+    ErrorCode HR_PERFORMANCE_TEMPLATE_NOT_FOUND = new ErrorCode(1_002_034_000, "绩效评分模板不存在");
+    ErrorCode HR_PERFORMANCE_TEMPLATE_USER_CONFLICT = new ErrorCode(1_002_034_001, "该员工已绑定其他绩效模板，请先解绑");
+    ErrorCode HR_PERFORMANCE_SCORE_NOT_FOUND = new ErrorCode(1_002_034_002, "绩效打分记录不存在");
+    ErrorCode HR_PERFORMANCE_SCORE_ALREADY_APPROVED = new ErrorCode(1_002_034_003, "绩效已审核通过，不可修改");
+    ErrorCode HR_PERFORMANCE_SCORE_STATUS_ERROR = new ErrorCode(1_002_034_004, "绩效状态不符合操作要求");
+    ErrorCode HR_PERFORMANCE_TEMPLATE_NOT_BOUND = new ErrorCode(1_002_034_005, "该员工未绑定绩效模板，无法创建绩效打分");
 
 }

@@ -116,9 +116,7 @@ public class InfraContractServiceImpl implements InfraContractService {
                 new LambdaQueryWrapperX<InfraContractDO>()
                         .eq(InfraContractDO::getResponsibleUserId, userId)
                         .eq(InfraContractDO::getStatus, 1));
-        YearMonth ym = YearMonth.of(yearMonth / 100, yearMonth % 100);
-        LocalDate monthStart = ym.atDay(1);
-        LocalDate monthEnd = ym.atEndOfMonth();
+        YearMonth targetYm = YearMonth.of(yearMonth / 100, yearMonth % 100);
         BigDecimal sum = BigDecimal.ZERO;
         for (InfraContractDO c : list) {
             BigDecimal amt = c.getCommissionAmount();
@@ -126,23 +124,32 @@ public class InfraContractServiceImpl implements InfraContractService {
             LocalDate start = c.getCommissionStartDate() != null ? c.getCommissionStartDate() : c.getStartDate();
             LocalDate end = c.getCommissionEndDate() != null ? c.getCommissionEndDate() : c.getEndDate();
             if (start != null && end != null) {
-                // 按时间区间：若该月与归属区间有重叠，按比例分摊
-                LocalDate overlapStart = start.isAfter(monthStart) ? start : monthStart;
-                LocalDate overlapEnd = end.isBefore(monthEnd) ? end : monthEnd;
-                if (!overlapStart.isAfter(overlapEnd)) {
-                    long totalDays = ChronoUnit.DAYS.between(start, end) + 1;
-                    long overlapDays = ChronoUnit.DAYS.between(overlapStart, overlapEnd) + 1;
-                    if (totalDays > 0) {
-                        sum = sum.add(amt.multiply(BigDecimal.valueOf(overlapDays))
-                                .divide(BigDecimal.valueOf(totalDays), 2, RoundingMode.HALF_UP));
-                    }
+                // 按涉及的月份个数平均分配：归属期跨越几个月，则每月提成 = 总提成 / 月份数
+                int monthCount = countMonthsInRange(start, end);
+                if (monthCount > 0 && isMonthInRange(targetYm, start, end)) {
+                    sum = sum.add(amt.divide(BigDecimal.valueOf(monthCount), 2, RoundingMode.HALF_UP));
                 }
             } else if (Integer.valueOf(yearMonth).equals(c.getCommissionYearMonth())) {
-                // 兼容旧数据：按 commission_year_month 精确匹配
+                // 兼容旧数据：按 commission_year_month 精确匹配，当月100%
                 sum = sum.add(amt);
             }
         }
         return sum;
+    }
+
+    /** 计算日期区间涉及的月份个数（如 2-14 到 4-15 涉及 2月、3月、4月，共3个月） */
+    private int countMonthsInRange(LocalDate start, LocalDate end) {
+        if (start.isAfter(end)) return 0;
+        YearMonth ymStart = YearMonth.from(start);
+        YearMonth ymEnd = YearMonth.from(end);
+        return (int) ChronoUnit.MONTHS.between(ymStart, ymEnd) + 1;
+    }
+
+    /** 判断目标年月是否在日期区间内 */
+    private boolean isMonthInRange(YearMonth targetYm, LocalDate start, LocalDate end) {
+        LocalDate monthStart = targetYm.atDay(1);
+        LocalDate monthEnd = targetYm.atEndOfMonth();
+        return !start.isAfter(monthEnd) && !end.isBefore(monthStart);
     }
 
     private void calcCommission(InfraContractDO contract) {

@@ -18,6 +18,8 @@ public class HrEmployeeRespVO {
     private Long id;
     @Schema(description = "关联系统用户ID")
     private Long userId;
+    @Schema(description = "关联用户账号（用于前端展示，如：姓名 (username)）")
+    private String username;
     @Schema(description = "姓名")
     @ExcelProperty("姓名")
     private String nickname;

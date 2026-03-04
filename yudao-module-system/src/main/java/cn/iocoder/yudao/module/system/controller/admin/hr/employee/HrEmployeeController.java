@@ -12,8 +12,10 @@ import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
 import cn.iocoder.yudao.module.system.controller.admin.hr.employee.vo.HrEmployeePageReqVO;
 import cn.iocoder.yudao.module.system.controller.admin.hr.employee.vo.HrEmployeeRespVO;
 import cn.iocoder.yudao.module.system.controller.admin.hr.employee.vo.HrEmployeeSaveReqVO;
+import cn.iocoder.yudao.module.system.dal.dataobject.user.AdminUserDO;
 import cn.iocoder.yudao.module.system.dal.dataobject.hr.employee.HrEmployeeDO;
 import cn.iocoder.yudao.module.system.service.hr.employee.HrEmployeeService;
+import cn.iocoder.yudao.module.system.service.user.AdminUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,6 +42,8 @@ public class HrEmployeeController {
     private HrEmployeeService hrEmployeeService;
     @Resource
     private SecurityFrameworkService securityFrameworkService;
+    @Resource
+    private AdminUserService adminUserService;
 
     @PostMapping("/create")
     @Operation(summary = "创建员工花名册")
@@ -72,6 +76,8 @@ public class HrEmployeeController {
     public CommonResult<HrEmployeeRespVO> get(@RequestParam("id") Long id) {
         HrEmployeeDO emp = hrEmployeeService.getEmployee(id);
         HrEmployeeRespVO vo = BeanUtils.toBean(emp, HrEmployeeRespVO.class);
+        // 填充关联用户账号，用于前端展示「姓名 (username)」
+        fillUsername(vo);
         // 无敏感权限时脱敏
         if (!securityFrameworkService.hasPermission("system:hr-employee:sensitive")) {
             if (vo.getIdCard() != null && !vo.getIdCard().isEmpty()) {
@@ -87,6 +93,7 @@ public class HrEmployeeController {
     public CommonResult<PageResult<HrEmployeeRespVO>> page(@Validated HrEmployeePageReqVO reqVO) {
         PageResult<HrEmployeeDO> pageResult = hrEmployeeService.getEmployeePage(reqVO);
         PageResult<HrEmployeeRespVO> voResult = BeanUtils.toBean(pageResult, HrEmployeeRespVO.class);
+        voResult.getList().forEach(this::fillUsername);
         // 列表中脱敏身份证
         if (!securityFrameworkService.hasPermission("system:hr-employee:sensitive")) {
             voResult.getList().forEach(vo -> {
@@ -105,15 +112,28 @@ public class HrEmployeeController {
     public void exportExcel(HttpServletResponse response, @Validated HrEmployeePageReqVO reqVO) throws IOException {
         reqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
         List<HrEmployeeDO> list = hrEmployeeService.getEmployeePage(reqVO).getList();
-        ExcelUtils.write(response, "员工花名册.xls", "员工列表", HrEmployeeRespVO.class,
-                BeanUtils.toBean(list, HrEmployeeRespVO.class));
+        List<HrEmployeeRespVO> voList = BeanUtils.toBean(list, HrEmployeeRespVO.class);
+        voList.forEach(this::fillUsername);
+        ExcelUtils.write(response, "员工花名册.xls", "员工列表", HrEmployeeRespVO.class, voList);
     }
 
     @GetMapping("/my-profile")
     @Operation(summary = "个人中心 - 我的员工档案")
     public CommonResult<HrEmployeeRespVO> myProfile() {
         Long userId = SecurityFrameworkUtils.getLoginUserId();
-        return success(hrEmployeeService.getMyProfile(userId));
+        HrEmployeeRespVO vo = hrEmployeeService.getMyProfile(userId);
+        fillUsername(vo);
+        return success(vo);
+    }
+
+    /** 根据 userId 填充 username，用于前端展示「姓名 (username)」。优先用系统用户昵称/账号，无则用花名册姓名避免 undefined */
+    private void fillUsername(HrEmployeeRespVO vo) {
+        if (vo == null) return;
+        if (vo.getUserId() != null && vo.getUserId() > 0) {
+            AdminUserDO user = adminUserService.getUser(vo.getUserId());
+            String display = user != null ? (user.getNickname() != null && !user.getNickname().isEmpty() ? user.getNickname() : user.getUsername()) : null;
+            vo.setUsername(display != null ? display : vo.getNickname());
+        }
     }
 
 }
