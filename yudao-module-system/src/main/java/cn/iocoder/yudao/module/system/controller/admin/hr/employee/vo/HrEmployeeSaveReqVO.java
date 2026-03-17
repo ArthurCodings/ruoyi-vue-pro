@@ -56,6 +56,21 @@ public class HrEmployeeSaveReqVO {
     @Schema(description = "离职日期")
     private LocalDate leaveDate;
 
+    @Schema(description = "银行卡号")
+    private String bankCardNo;
+
+    @Schema(description = "开户行")
+    private String bankName;
+
+    @Schema(description = "学历（如：本科、硕士）")
+    private String education;
+
+    @Schema(description = "现居住地")
+    private String currentAddress;
+
+    @Schema(description = "户口类型（如：城镇、农村）")
+    private String householdType;
+
     @Schema(description = "身份证号")
     private String idCard;
 

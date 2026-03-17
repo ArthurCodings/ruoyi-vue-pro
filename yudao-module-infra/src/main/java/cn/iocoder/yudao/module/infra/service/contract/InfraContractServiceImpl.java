@@ -39,6 +39,7 @@ public class InfraContractServiceImpl implements InfraContractService {
         if (contract.getContractNo() == null || contract.getContractNo().trim().isEmpty()) {
             contract.setContractNo(generateContractNo());
         }
+        if (contract.getServiceType() == null) contract.setServiceType(1);
         // 根据负责人ID填充负责人姓名快照
         fillResponsibleUsername(contract);
         // 自动计算提成金额
@@ -63,6 +64,7 @@ public class InfraContractServiceImpl implements InfraContractService {
     @Override
     public void updateContract(InfraContractSaveReqVO updateReqVO) {
         InfraContractDO update = BeanUtils.toBean(updateReqVO, InfraContractDO.class);
+        if (update.getServiceType() == null) update.setServiceType(1);
         fillResponsibleUsername(update);
         calcCommission(update);
         // 提成归属时间区间：为空时默认取合同开始/结束日期

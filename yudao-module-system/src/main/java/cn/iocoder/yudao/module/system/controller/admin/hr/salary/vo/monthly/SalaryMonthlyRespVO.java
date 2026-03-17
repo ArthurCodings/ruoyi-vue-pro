@@ -39,6 +39,16 @@ public class SalaryMonthlyRespVO {
     @Schema(description = "补贴快照")
     @ExcelProperty("补贴")
     private BigDecimal allowance;
+    @Schema(description = "五险快照")
+    private BigDecimal socialInsurance;
+    @Schema(description = "公积金快照")
+    private BigDecimal housingFund;
+    @Schema(description = "个税快照")
+    private BigDecimal tax;
+    @Schema(description = "其他快照")
+    private BigDecimal other;
+    @Schema(description = "其他扣款备注说明")
+    private String otherRemark;
     @Schema(description = "全勤奖")
     @ExcelProperty("全勤奖")
     private BigDecimal fullAttendanceBonus;

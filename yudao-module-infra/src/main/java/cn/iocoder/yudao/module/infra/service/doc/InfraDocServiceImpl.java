@@ -9,9 +9,12 @@ import cn.iocoder.yudao.module.infra.controller.admin.doc.vo.InfraDocSaveReqVO;
 import cn.iocoder.yudao.module.infra.dal.dataobject.doc.DocCategoryDO;
 import cn.iocoder.yudao.module.infra.dal.dataobject.doc.InfraDocDO;
 import cn.iocoder.yudao.module.infra.dal.mysql.doc.DocCategoryMapper;
+import cn.iocoder.yudao.module.infra.enums.ErrorCodeConstants;
 import cn.iocoder.yudao.module.infra.dal.mysql.doc.InfraDocMapper;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+
+import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.ArrayList;
@@ -40,7 +43,15 @@ public class InfraDocServiceImpl implements InfraDocService {
 
     @Override
     public void updateCategory(DocCategorySaveReqVO updateReqVO) {
-        categoryMapper.updateById(BeanUtils.toBean(updateReqVO, DocCategoryDO.class));
+        if (updateReqVO.getId() == null) {
+            throw exception(ErrorCodeConstants.DOC_CATEGORY_NOT_EXISTS);
+        }
+        DocCategoryDO existing = categoryMapper.selectById(updateReqVO.getId());
+        if (existing == null) {
+            throw exception(ErrorCodeConstants.DOC_CATEGORY_NOT_EXISTS);
+        }
+        DocCategoryDO update = BeanUtils.toBean(updateReqVO, DocCategoryDO.class);
+        categoryMapper.updateById(update);
     }
 
     @Override

@@ -36,6 +36,16 @@ public class SalaryMonthlyDO extends TenantBaseDO {
     private BigDecimal commission;
     /** 补贴快照 */
     private BigDecimal allowance;
+    /** 五险快照 */
+    private BigDecimal socialInsurance;
+    /** 公积金快照 */
+    private BigDecimal housingFund;
+    /** 个税快照 */
+    private BigDecimal tax;
+    /** 其他（杂项）快照 */
+    private BigDecimal other;
+    /** 其他扣款备注说明快照 */
+    private String otherRemark;
     /** 全勤奖 */
     private BigDecimal fullAttendanceBonus;
     /** 日薪快照（基本工资 ÷ 当月实际工作日数，四舍五入保留2位） */

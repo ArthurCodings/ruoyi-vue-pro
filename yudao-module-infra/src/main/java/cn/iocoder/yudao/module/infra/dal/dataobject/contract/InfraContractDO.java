@@ -28,6 +28,8 @@ public class InfraContractDO extends TenantBaseDO {
     private String contractName;
     /** 合同类型：1=销售 2=采购 3=劳动 4=其他 */
     private Integer type;
+    /** 服务类型：1=长期 2=短期 */
+    private Integer serviceType;
     /** 客户/供应商名称 */
     private String customerName;
     /** 合同金额（元） */

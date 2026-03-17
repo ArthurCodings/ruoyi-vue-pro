@@ -23,6 +23,16 @@ public class EmployeeSalaryRespVO {
     private BigDecimal positionSalary;
     @Schema(description = "补贴（元）")
     private BigDecimal allowance;
+    @Schema(description = "五险（元）")
+    private BigDecimal socialInsurance;
+    @Schema(description = "公积金（元）")
+    private BigDecimal housingFund;
+    @Schema(description = "个税（元）")
+    private BigDecimal tax;
+    @Schema(description = "其他（元）")
+    private BigDecimal other;
+    @Schema(description = "其他扣款备注说明")
+    private String otherRemark;
     @Schema(description = "个人全勤奖金额（元，0=使用全局配置）")
     private BigDecimal fullAttendanceAmount;
     @Schema(description = "生效日期")

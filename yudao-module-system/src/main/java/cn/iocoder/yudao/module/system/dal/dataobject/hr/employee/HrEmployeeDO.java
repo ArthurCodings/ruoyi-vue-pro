@@ -52,6 +52,16 @@ public class HrEmployeeDO extends TenantBaseDO {
     private LocalDate formalDate;
     /** 离职日期 */
     private LocalDate leaveDate;
+    /** 银行卡号 */
+    private String bankCardNo;
+    /** 开户行 */
+    private String bankName;
+    /** 学历（如：本科、硕士） */
+    private String education;
+    /** 现居住地 */
+    private String currentAddress;
+    /** 户口类型（如：城镇、农村） */
+    private String householdType;
     /** 身份证号（敏感字段） */
     private String idCard;
     /** 紧急联系人姓名 */

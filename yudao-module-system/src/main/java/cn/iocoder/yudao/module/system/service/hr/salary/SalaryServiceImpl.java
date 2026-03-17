@@ -166,9 +166,14 @@ public class SalaryServiceImpl implements SalaryService {
             }
 
             EmployeeSalaryDO salaryRecord = employeeSalaryMapper.selectByUserId(emp.getUserId());
-            BigDecimal baseSalary     = salaryRecord != null ? salaryRecord.getBaseSalary()     : BigDecimal.ZERO;
-            BigDecimal positionSalary = salaryRecord != null ? salaryRecord.getPositionSalary() : BigDecimal.ZERO;
-            BigDecimal allowance      = salaryRecord != null ? salaryRecord.getAllowance()      : BigDecimal.ZERO;
+            BigDecimal baseSalary     = salaryRecord != null && salaryRecord.getBaseSalary() != null     ? salaryRecord.getBaseSalary()     : BigDecimal.ZERO;
+            BigDecimal positionSalary = salaryRecord != null && salaryRecord.getPositionSalary() != null ? salaryRecord.getPositionSalary() : BigDecimal.ZERO;
+            BigDecimal allowance      = salaryRecord != null && salaryRecord.getAllowance() != null      ? salaryRecord.getAllowance()      : BigDecimal.ZERO;
+            BigDecimal socialInsurance= salaryRecord != null && salaryRecord.getSocialInsurance() != null ? salaryRecord.getSocialInsurance() : BigDecimal.ZERO;
+            BigDecimal housingFund    = salaryRecord != null && salaryRecord.getHousingFund() != null    ? salaryRecord.getHousingFund()    : BigDecimal.ZERO;
+            BigDecimal tax            = salaryRecord != null && salaryRecord.getTax() != null            ? salaryRecord.getTax()            : BigDecimal.ZERO;
+            BigDecimal other         = salaryRecord != null && salaryRecord.getOther() != null           ? salaryRecord.getOther()           : BigDecimal.ZERO;
+            String otherRemark       = salaryRecord != null && salaryRecord.getOtherRemark() != null    ? salaryRecord.getOtherRemark()      : "";
 
             // 日薪 = (基本工资 + 岗位工资 + 补贴) / 计薪工作日，四舍五入保留2位
             BigDecimal salaryBase = baseSalary.add(positionSalary).add(allowance);
@@ -247,6 +252,11 @@ public class SalaryServiceImpl implements SalaryService {
             monthly.setBaseSalary(baseSalary);
             monthly.setPositionSalary(positionSalary);
             monthly.setAllowance(allowance);
+            monthly.setSocialInsurance(socialInsurance);
+            monthly.setHousingFund(housingFund);
+            monthly.setTax(tax);
+            monthly.setOther(other);
+            monthly.setOtherRemark(otherRemark);
             monthly.setPerformance(performance);
             monthly.setCommission(commission);
             monthly.setDailySalary(dailySalary);
@@ -266,7 +276,7 @@ public class SalaryServiceImpl implements SalaryService {
             monthly.setStatus(0);
             monthly.setRemark("");
 
-            // 应发合计 = 基本 + 岗位 + 绩效 + 提成 + 补贴 + 全勤奖 - 考勤扣款
+            // 应发合计 = 基本 + 岗位 + 绩效 + 提成 + 补贴 + 全勤奖 - 考勤扣款 - 五险 - 公积金 - 个税 - 其他
             BigDecimal total = baseSalary
                     .add(positionSalary)
                     .add(performance)
@@ -274,6 +284,10 @@ public class SalaryServiceImpl implements SalaryService {
                     .add(allowance)
                     .add(fullBonus)
                     .subtract(attendanceDeduction)
+                    .subtract(socialInsurance)
+                    .subtract(housingFund)
+                    .subtract(tax)
+                    .subtract(other)
                     .setScale(2, RoundingMode.HALF_UP);
             // 最低不低于0
             if (total.compareTo(BigDecimal.ZERO) < 0) total = BigDecimal.ZERO;
@@ -343,6 +357,14 @@ public class SalaryServiceImpl implements SalaryService {
             addItem(items, "performance", "绩效", nvl(monthly.getPerformance()), "基本薪资 × 0.45 × 绩效系数（审核通过后取值）");
             addItem(items, "commission", "提成", nvl(monthly.getCommission()), "按归属期涉及的月份个数平均分配");
             addItem(items, "allowance", "补贴", nvl(monthly.getAllowance()), "来自员工薪资档案");
+            addItem(items, "socialInsurance", "五险", nvl(monthly.getSocialInsurance()), "来自员工薪资档案");
+            addItem(items, "housingFund", "公积金", nvl(monthly.getHousingFund()), "来自员工薪资档案");
+            addItem(items, "tax", "个税", nvl(monthly.getTax()), "来自员工薪资档案");
+            String otherDesc = "杂项扣款";
+            if (monthly.getOtherRemark() != null && !monthly.getOtherRemark().trim().isEmpty()) {
+                otherDesc = otherDesc + "（" + monthly.getOtherRemark().trim() + "）";
+            }
+            addItem(items, "other", "其他", nvl(monthly.getOther()), otherDesc);
             addItem(items, "fullAttendanceBonus", "全勤奖", nvl(monthly.getFullAttendanceBonus()), "缺勤=0 且 迟到≤1 时发放");
             addItem(items, "shouldAttendDays", "应出勤天数", monthly.getShouldAttendDays() != null ? monthly.getShouldAttendDays() : 0, "排班中需打卡的工作日数");
             addItem(items, "actualAttendDays", "实际出勤天数", monthly.getActualAttendDays() != null ? monthly.getActualAttendDays() : 0, "正常+迟到+病假+事假");
@@ -361,10 +383,11 @@ public class SalaryServiceImpl implements SalaryService {
             addItem(items, "attendanceDeduction", "考勤扣款合计", attendDed,
                     String.format("迟到+病假+事假+缺勤 = %s+%s+%s+%s = %s", fmt(lateDed), fmt(sickDed), fmt(casualDed), fmt(absentDed), fmt(attendDed)));
             addItem(items, "totalSalary", "应发合计", nvl(monthly.getTotalSalary()),
-                    String.format("基本+岗位+绩效+提成+补贴+全勤奖-考勤扣款 = %s+%s+%s+%s+%s+%s-%s = %s",
+                    String.format("基本+岗位+绩效+提成+补贴+全勤奖-考勤扣款-五险-公积金-个税-其他 = %s+%s+%s+%s+%s+%s-%s-%s-%s-%s-%s = %s",
                             fmt(nvl(monthly.getBaseSalary())), fmt(nvl(monthly.getPositionSalary())), fmt(nvl(monthly.getPerformance())),
                             fmt(nvl(monthly.getCommission())), fmt(nvl(monthly.getAllowance())), fmt(nvl(monthly.getFullAttendanceBonus())),
-                            fmt(attendDed), fmt(nvl(monthly.getTotalSalary()))));
+                            fmt(attendDed), fmt(nvl(monthly.getSocialInsurance())), fmt(nvl(monthly.getHousingFund())), fmt(nvl(monthly.getTax())), fmt(nvl(monthly.getOther())),
+                            fmt(nvl(monthly.getTotalSalary()))));
 
             Map<String, Object> result = new LinkedHashMap<>();
             result.put("items", items);

@@ -26,6 +26,9 @@ public class InfraContractSaveReqVO {
     @NotNull(message = "合同类型不能为空")
     private Integer type;
 
+    @Schema(description = "服务类型：1=长期 2=短期")
+    private Integer serviceType;
+
     @Schema(description = "客户/供应商名称")
     private String customerName;
 

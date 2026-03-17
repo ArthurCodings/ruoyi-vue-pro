@@ -25,6 +25,8 @@ public class InfraContractRespVO {
     @Schema(description = "合同类型")
     @ExcelProperty("合同类型")
     private Integer type;
+    @Schema(description = "服务类型：1=长期 2=短期")
+    private Integer serviceType;
     @Schema(description = "客户/供应商名称")
     @ExcelProperty("客户名称")
     private String customerName;

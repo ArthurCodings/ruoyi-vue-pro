@@ -29,6 +29,16 @@ public class EmployeeSalaryDO extends TenantBaseDO {
     private BigDecimal positionSalary;
     /** 补贴（元） */
     private BigDecimal allowance;
+    /** 五险（元） */
+    private BigDecimal socialInsurance;
+    /** 公积金（元） */
+    private BigDecimal housingFund;
+    /** 个税（元） */
+    private BigDecimal tax;
+    /** 其他（元，杂项扣款） */
+    private BigDecimal other;
+    /** 其他扣款备注说明 */
+    private String otherRemark;
     /** 个人全勤奖金额（元，0=使用全局配置 hr_salary_config.full_attendance_amount） */
     private BigDecimal fullAttendanceAmount;
     /** 生效日期 */

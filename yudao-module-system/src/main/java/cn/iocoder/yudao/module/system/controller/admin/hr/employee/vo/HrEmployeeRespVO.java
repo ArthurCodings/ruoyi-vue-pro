@@ -58,6 +58,16 @@ public class HrEmployeeRespVO {
     private LocalDate formalDate;
     @Schema(description = "离职日期")
     private LocalDate leaveDate;
+    @Schema(description = "银行卡号")
+    private String bankCardNo;
+    @Schema(description = "开户行")
+    private String bankName;
+    @Schema(description = "学历")
+    private String education;
+    @Schema(description = "现居住地")
+    private String currentAddress;
+    @Schema(description = "户口类型")
+    private String householdType;
     @Schema(description = "身份证号（无敏感权限时脱敏）")
     private String idCard;
     @Schema(description = "紧急联系人")
