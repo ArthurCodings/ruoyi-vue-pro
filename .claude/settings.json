@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//e/Work/OA/yudao-ui-admin-vue3/**)",
+      "Read(//e/Work/OA/**)"
+    ]
+  }
+}
